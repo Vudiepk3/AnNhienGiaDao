@@ -1,7 +1,29 @@
 /* main.js - separated JavaScript for index.html */
-import { analytics, logEvent } from './firebase-config.js';
 
 const MAIN_AFF_LINK = "https://s.shopee.vn/2g6jNGrzQC";
+let analytics = null;
+let logEvent = null;
+
+// Initialize Firebase when script is loaded
+if (window.firebase) {
+    const firebaseConfig = {
+        apiKey: "AIzaSyBSZWSjVpfxdOF4ulYQDqfWNvJeehB-H3I",
+        authDomain: "annhiengiadao.firebaseapp.com",
+        projectId: "annhiengiadao",
+        storageBucket: "annhiengiadao.firebasestorage.app",
+        messagingSenderId: "659220639431",
+        appId: "1:659220639431:web:5f281a9eeaed77843198e2",
+        measurementId: "G-5SD37PZ09W"
+    };
+    
+    try {
+        const app = firebase.initializeApp(firebaseConfig);
+        analytics = firebase.analytics(app);
+        logEvent = firebase.analytics.logEvent;
+    } catch (error) {
+        console.log('Firebase initialization error:', error);
+    }
+}
 const PRODUCTS = [
     {
         name: "Nước mắm chay Làng Chài Xưa",
@@ -49,22 +71,24 @@ PRODUCTS.forEach((prod, index) => {
     card.className = 'product-card';
     card.onclick = () => {
         // Log product click event to Firebase
-        logEvent(analytics, 'select_item', {
-            items: [{
-                item_id: `product_${index}`,
-                item_name: prod.name,
-                item_category: 'buddhist_products',
-                price: 0,
-                quantity: 1
-            }]
-        });
-        
-        // Also log a custom event
-        logEvent(analytics, 'product_click', {
-            product_name: prod.name,
-            product_index: index,
-            timestamp: new Date().toISOString()
-        });
+        if (analytics && logEvent) {
+            logEvent(analytics, 'select_item', {
+                items: [{
+                    item_id: `product_${index}`,
+                    item_name: prod.name,
+                    item_category: 'buddhist_products',
+                    price: 0,
+                    quantity: 1
+                }]
+            });
+            
+            // Also log a custom event
+            logEvent(analytics, 'product_click', {
+                product_name: prod.name,
+                product_index: index,
+                timestamp: new Date().toISOString()
+            });
+        }
         
         window.open(prod.link, '_blank');
     };
@@ -88,20 +112,22 @@ if (mainAffBtn) {
         e.preventDefault();
         
         // Log button click event to Firebase
-        logEvent(analytics, 'button_click', {
-            button_name: 'main_affiliate_button',
-            button_text: 'Xem bí quyết ăn chay',
-            timestamp: new Date().toISOString()
-        });
-        
-        // Also log as a view_item event
-        logEvent(analytics, 'view_item', {
-            items: [{
-                item_id: 'main_feature',
-                item_name: 'Ăn chay nuôi dưỡng nội tâm an yên',
-                item_category: 'featured_content'
-            }]
-        });
+        if (analytics && logEvent) {
+            logEvent(analytics, 'button_click', {
+                button_name: 'main_affiliate_button',
+                button_text: 'Xem bí quyết ăn chay',
+                timestamp: new Date().toISOString()
+            });
+            
+            // Also log as a view_item event
+            logEvent(analytics, 'view_item', {
+                items: [{
+                    item_id: 'main_feature',
+                    item_name: 'Ăn chay nuôi dưỡng nội tâm an yên',
+                    item_category: 'featured_content'
+                }]
+            });
+        }
         
         window.open(MAIN_AFF_LINK, '_blank');
     };
@@ -136,10 +162,12 @@ window.addEventListener('scroll', () => {
             // Log when user scrolls to shop section
             if (reveal.id === 'shop' && !hasLoggedShopView) {
                 hasLoggedShopView = true;
-                logEvent(analytics, 'view_item_list', {
-                    item_category: 'buddhist_products',
-                    timestamp: new Date().toISOString()
-                });
+                if (analytics && logEvent) {
+                    logEvent(analytics, 'view_item_list', {
+                        item_category: 'buddhist_products',
+                        timestamp: new Date().toISOString()
+                    });
+                }
             }
         }
     });
@@ -148,19 +176,21 @@ window.addEventListener('scroll', () => {
 /* --- FADE-IN ON LOAD --- */
 
 // Log page view when page loads
-logEvent(analytics, 'page_view', {
-    page_title: 'An Nhiên Gia Đạo - Nam mô A Di Đà Phật',
-    page_location: window.location.href,
-    timestamp: new Date().toISOString()
-});
-
-// Log when user spends 30 seconds on the page (engagement metric)
-setTimeout(() => {
-    logEvent(analytics, 'engagement', {
-        session_duration: 30,
+if (analytics && logEvent) {
+    logEvent(analytics, 'page_view', {
+        page_title: 'An Nhiên Gia Đạo - Nam mô A Di Đà Phật',
+        page_location: window.location.href,
         timestamp: new Date().toISOString()
     });
-}, 30000);
+
+    // Log when user spends 30 seconds on the page (engagement metric)
+    setTimeout(() => {
+        logEvent(analytics, 'engagement', {
+            session_duration: 30,
+            timestamp: new Date().toISOString()
+        });
+    }, 30000);
+}
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         document.body.classList.add('loaded');
