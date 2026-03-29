@@ -1,4 +1,5 @@
 /* main.js - separated JavaScript for index.html */
+import { analytics, logEvent } from './firebase-config.js';
 
 const MAIN_AFF_LINK = "https://s.shopee.vn/2g6jNGrzQC";
 const PRODUCTS = [
@@ -43,10 +44,30 @@ const PRODUCTS = [
 /* --- RENDER PRODUCTS --- */
 const grid = document.getElementById('productGrid');
 
-PRODUCTS.forEach(prod => {
+PRODUCTS.forEach((prod, index) => {
     const card = document.createElement('div');
     card.className = 'product-card';
-    card.onclick = () => window.open(prod.link, '_blank');
+    card.onclick = () => {
+        // Log product click event to Firebase
+        logEvent(analytics, 'select_item', {
+            items: [{
+                item_id: `product_${index}`,
+                item_name: prod.name,
+                item_category: 'buddhist_products',
+                price: 0,
+                quantity: 1
+            }]
+        });
+        
+        // Also log a custom event
+        logEvent(analytics, 'product_click', {
+            product_name: prod.name,
+            product_index: index,
+            timestamp: new Date().toISOString()
+        });
+        
+        window.open(prod.link, '_blank');
+    };
 
     card.innerHTML = `
         <div class="product-img-wrap">
@@ -65,6 +86,23 @@ const mainAffBtn = document.getElementById('mainAffBtn');
 if (mainAffBtn) {
     mainAffBtn.onclick = (e) => {
         e.preventDefault();
+        
+        // Log button click event to Firebase
+        logEvent(analytics, 'button_click', {
+            button_name: 'main_affiliate_button',
+            button_text: 'Xem bí quyết ăn chay',
+            timestamp: new Date().toISOString()
+        });
+        
+        // Also log as a view_item event
+        logEvent(analytics, 'view_item', {
+            items: [{
+                item_id: 'main_feature',
+                item_name: 'Ăn chay nuôi dưỡng nội tâm an yên',
+                item_category: 'featured_content'
+            }]
+        });
+        
         window.open(MAIN_AFF_LINK, '_blank');
     };
 }
@@ -72,6 +110,7 @@ if (mainAffBtn) {
 /* --- SCROLL EFFECTS --- */
 const stickyNav = document.getElementById('stickyNav');
 const reveals = document.querySelectorAll('.reveal');
+let hasLoggedShopView = false;
 
 window.addEventListener('scroll', () => {
     const scroll = window.scrollY;
@@ -93,11 +132,35 @@ window.addEventListener('scroll', () => {
 
         if (revealTop < windowHeight - revealPoint) {
             reveal.classList.add('active');
+            
+            // Log when user scrolls to shop section
+            if (reveal.id === 'shop' && !hasLoggedShopView) {
+                hasLoggedShopView = true;
+                logEvent(analytics, 'view_item_list', {
+                    item_category: 'buddhist_products',
+                    timestamp: new Date().toISOString()
+                });
+            }
         }
     });
 });
 
 /* --- FADE-IN ON LOAD --- */
+
+// Log page view when page loads
+logEvent(analytics, 'page_view', {
+    page_title: 'An Nhiên Gia Đạo - Nam mô A Di Đà Phật',
+    page_location: window.location.href,
+    timestamp: new Date().toISOString()
+});
+
+// Log when user spends 30 seconds on the page (engagement metric)
+setTimeout(() => {
+    logEvent(analytics, 'engagement', {
+        session_duration: 30,
+        timestamp: new Date().toISOString()
+    });
+}, 30000);
 window.addEventListener('DOMContentLoaded', () => {
     setTimeout(() => {
         document.body.classList.add('loaded');
